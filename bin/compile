@@ -3,6 +3,7 @@
 
 set -e
 
+GETTEXT_CHECKSUM="I/OdddxMVVwi67Wrnu0gZorNTYbBCe5wgr4j6Z0W0k4="
 GETTEXT_TARBALL=http://fb_wanted.s3.amazonaws.com/bp/gettext.tar.gz
 TARGET_DIR=$HOME
 BUILD_DIR=$1
@@ -19,7 +20,15 @@ fi
 
 echo "-----> Installing gettext..."
 mkdir -p $BUILD_DIR/.heroku
-curl --silent --max-time 60 --location "$GETTEXT_TARBALL" | tar xz -C "$BUILD_DIR/.heroku"
+
+rm -f tmp-gettext.tar.gz
+curl -s -L -o tmp-gettext.tar.gz "$GETTEXT_TARBALL"
+if [ "$GETTEXT_CHECKSUM" != "$(openssl sha -sha256 -binary tmp-gettext.tar.gz | openssl base64)" ]; then
+	echo "Checksum DOES NOT match. Gettext will not be installed."
+	exit 1
+fi
+tar -C "$BUILD_DIR/.heroku" -zxf tmp-gettext.tar.gz
+rm -f tmp-gettext.tar.gz
 
 # display version in a nice way
 "$BUILD_DIR/.heroku/gettext/bin/xgettext" --version |& sed 's/xgettext/      gettext/;q'
